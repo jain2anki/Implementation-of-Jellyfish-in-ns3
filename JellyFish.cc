@@ -37,6 +37,7 @@ JellyFishHelper::~JellyFishHelper() {
 }
 
 std::vector<std::pair<int,int>> JellyFishHelper::edgeSet(int switches, int ports, int switchPorts) {
+  std::vector<std::vector<int> > adj(switches,std::vector<int>(switches,0));
   std::vector<int> vec; // vector for storing switch numbers 
   int i;
   for(i=0;i<switches;i++)
@@ -63,6 +64,7 @@ std::vector<std::pair<int,int>> JellyFishHelper::edgeSet(int switches, int ports
     for(int j=i+1;j<=switchPorts;j++)
     {
       edgeSet.push_back(std::make_pair(randomSwitches[i],randomSwitches[j]));
+      adj[randomSwitches[i]][randomSwitches[j]]=adj[randomSwitches[j]][randomSwitches[i]]=1;
     }
   }
 
@@ -80,19 +82,25 @@ std::vector<std::pair<int,int>> JellyFishHelper::edgeSet(int switches, int ports
     {
       additionalEdges.push_back(std::make_pair(remainingPort,remainingSwitches[i]));
       currPorts--;
+      adj[remainingPort][remainingSwitches[i]]=1;
     }
 
     //reamove an edge and store the additional two edges 
 
-    for(int j=1;j<currPorts;j+=2)
+    while(currPorts>1)
     {
       int siz = edgeSet.size();
       int index = rand()%siz;
       int node1 = edgeSet[index].first;
       int node2 = edgeSet[index].second;
+      if((adj[node1][remainingSwitches[i]])||(adj[node2][remainingSwitches[i]]))
+        continue;
       additionalEdges.push_back(std::make_pair(node1,remainingSwitches[i]));
       additionalEdges.push_back(std::make_pair(node2,remainingSwitches[i]));
-      edgeSet.erase(edgeSet.begin()+index);     
+      adj[node1][node2]=0;
+      edgeSet.erase(edgeSet.begin()+index);
+      adj[node1][remainingSwitches[i]] = adj[node2][remainingSwitches[i]] = 1;
+      currPorts -= 2;
     }
 
     // update the remaining Port switch if any port is left
@@ -101,7 +109,11 @@ std::vector<std::pair<int,int>> JellyFishHelper::edgeSet(int switches, int ports
     {
       remainingPort = remainingSwitches[i];
     }
-
+    else
+    {
+      remainingPort=-1;
+      //If no port is left, set reamining port to -1
+    }
     // Move the additional edges to the edge set
 
     for(int j=0;j<(int)additionalEdges.size();j++)
